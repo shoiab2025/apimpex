@@ -43,16 +43,24 @@ export const registerUser = async (req, res, next) => {
 // POST /api/users/login
 export const loginUser = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, phone, password } = req.body;
 
-    const user = await User.findOne({ email })
+    if (!email || !phone || !password) {
+      return res.status(400).json({ message: 'Email, phone, and password are required' });
+    }
+
+    const user = await User.findOne({ email, phone })
       .select('+passwordHash')
-      .lean({ getters: true }); // lean keeps plain object
+      .lean({ getters: true });
 
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
     const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!match) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
 
     return res.json(stripSensitive(user));
   } catch (err) {

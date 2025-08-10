@@ -3,11 +3,34 @@ import bcrypt from 'bcrypt';
 
 const addressSchema = new mongoose.Schema(
   {
-    tag: { type: String, enum: ['home', 'office', 'other'], default: 'home' },
-    street: String,
-    city: String,
-    state: String,
-    zip: String,
+    tag: {
+      type: String,
+      enum: ['home', 'office', 'other'],
+      default: 'home',
+    },
+    doorNo: {
+      type: String,
+      required: true,
+    },
+    street: {
+      type: String,
+      required: true,
+    },
+    landmark: String, // optional
+    buildingName: String, // optional
+    floor: String, // optional
+    city: {
+      type: String,
+      required: true,
+    },
+    state: {
+      type: String,
+      required: true,
+    },
+    zip: {
+      type: String,
+      required: true,
+    },
   },
   { _id: false },
 );

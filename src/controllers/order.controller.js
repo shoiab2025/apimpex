@@ -61,7 +61,7 @@ export const saveOrUpdateOrder = async (req, res) => {
 export const getOrders = async (req, res) => {
   try {
     // Optionally filter by user id query param: ?user=userid
-    const filter = {};
+    const filter = {}
     if (req.query.user) {
       filter.user = req.query.user;
     }

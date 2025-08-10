@@ -1,12 +1,11 @@
 import mongoose from 'mongoose';
-
 // =======================
 // Delivery Schema
 // =======================
 const deliverySchema = new mongoose.Schema(
   {
     order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
-    deliveryAgent: { type: String, required: true },
+    deliveryAgent: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     deliveryStatus: {
       type: String,
       enum: ['out_for_delivery', 'delivered'],

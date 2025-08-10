@@ -17,7 +17,7 @@ const router = express.Router();
  *   { _id, deliveryStatus, ... }         ➜ update existing by _id
  */
 router.post('/', saveOrUpdateDelivery);
-router.put('/',  saveOrUpdateDelivery);
+router.put('/:id',  saveOrUpdateDelivery);
 
 // conventional REST endpoints
 router.get('/', getAllDeliveries);

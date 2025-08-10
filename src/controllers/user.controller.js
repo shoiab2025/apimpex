@@ -16,7 +16,15 @@ const stripSensitive = doc => {
 // POST /api/users/register
 export const registerUser = async (req, res, next) => {
   try {
+    if (!req.body) {
+      return res.status(400).json({ message: 'Request body is missing' });
+    }
+
     const { name, email, phone, password, address = [], role } = req.body;
+
+    if (!name || !email || !phone || !password) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 

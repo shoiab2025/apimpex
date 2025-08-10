@@ -1,4 +1,7 @@
 import { Delivery } from '../models/delivery.model.js';
+import Order from '../models/order.model.js';
+import User from '../models/user.model.js';
+import {toObjectId} from '../utils/mongooseHelpers.js';
 
 /**
  * Helper to standardise all JSON responses.
@@ -6,76 +9,53 @@ import { Delivery } from '../models/delivery.model.js';
 const send = (res, statusCode, { success, message, data = null, error = null }) =>
   res.status(statusCode).json({ success, message, data, error });
 
-/**
- * Create OR update a Delivery in a single call.
- *
- * How it decides:
- * 1. If req.body._id is present ➜ update that record (404 if not found).
- * 2. Else if a Delivery already exists for req.body.order ➜ update that one.
- * 3. Else ➜ create a brand-new Delivery.
- *
- * Returns:
- *   { success, message, data } on success
- *   { success:false, message, error } on any failure
- */
 export const saveOrUpdateDelivery = async (req, res) => {
   try {
-    const payload = req.body;
+    let { id } = req.params;
+    let { order, deliveryAgent, ...details } = req.body;
 
-    // -----------------------------
-    // STEP 1 – Determine upsert key
-    // -----------------------------
-    let query = null;
+    // Convert IDs
+    id = toObjectId(id);
+    order = toObjectId(order);
+    deliveryAgent = toObjectId(deliveryAgent);
 
-    if (payload._id) {
-      query = { _id: payload._id };
-    } else if (payload.order) {
-      // Guarantee one Delivery per Order if that’s your business rule
-      query = { order: payload.order };
+    if (!order || !deliveryAgent) {
+      return res.error(400, "Invalid Order or Delivery Agent ID");
     }
 
-    // If we have a query, attempt to upsert; otherwise create new directly
-    let savedDoc;
-    if (query) {
-      savedDoc = await Delivery.findOneAndUpdate(
-        query,
-        { $set: payload },               // update fields
-        { new: true, upsert: true, runValidators: true }
-      ).populate('order');
-    } else {
-      // No _id and no order supplied – cannot decide what to do
-      return send(res, 400, {
-        success: false,
-        message: 'Must supply either _id or order to create / update a delivery',
-        error: 'ValidationError',
-      });
+    // Update branch
+    if (id) {
+      const updated = await Delivery.findByIdAndUpdate(id, details, { new: true });
+      return updated
+        ? res.success(200, "Delivery updated", updated)
+        : res.error(404, "Delivery not found");
     }
 
-    // Distinguish create vs update by checking isNew
-    const wasCreated = savedDoc.createdAt.getTime() === savedDoc.updatedAt.getTime();
-    const action = wasCreated ? 'created' : 'updated';
+    // Check existence
 
-    return send(res, wasCreated ? 201 : 200, {
-      success: true,
-      message: `Delivery ${action} successfully`,
-      data: savedDoc,
-    });
+    
+    const singam = await Order.find({})
+    const [orderDoc, agentDoc] = await Promise.all([
+      Order.findById(order),
+      User.findById(deliveryAgent)
+    ]);
+    if (!orderDoc) return res.error(404, "Order not found");
+    if (!agentDoc) return res.error(404, "Delivery Agent not found");
+
+    // Create or update
+    const delivery = await Delivery.findOneAndUpdate(
+      { order, deliveryAgent },
+      { order, deliveryAgent, ...details },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    return res.success(201, "Delivery created/updated", delivery);
   } catch (err) {
-    // Handle “not found when _id provided but no doc exists”
-    if (err.kind === 'ObjectId' || err.code === 11000) {
-      return send(res, 404, {
-        success: false,
-        message: 'Delivery not found',
-        error: err.message,
-      });
-    }
-    return send(res, 500, {
-      success: false,
-      message: 'Server error saving delivery',
-      error: err.message,
-    });
+    console.error(err);
+    res.error(500, "Server error", err.message);
   }
 };
+
 
 /**
  * GET /api/deliveries
@@ -100,11 +80,7 @@ export const getAllDeliveries = async (req, res) => {
       data: deliveries,
     });
   } catch (err) {
-    return send(res, 500, {
-      success: false,
-      message: 'Error fetching deliveries',
-      error: err.message,
-    });
+    return next(err)
   }
 };
 
@@ -140,3 +116,18 @@ export const deleteDelivery = async (req, res) => {
     return send(res, 500, { success: false, message: 'Error deleting delivery', error: err.message });
   }
 };
+
+
+function convertStringToModelId(modelId){
+  if (typeof modelId === 'string') {
+    return mongoose.Types.ObjectId(modelId);
+  }
+
+  return modelId;
+}
+
+function giveanyname(model, id){
+  const modelExist = model.findOne({ _id: convertStringToModelId(id) });
+  return modelExist;
+}
+

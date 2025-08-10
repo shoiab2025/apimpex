@@ -22,6 +22,7 @@ import offerRoutes from './routes/offer.routes.js';
 import orderModel from './models/order.model.js';
 import deliveryAgentRoutes from './routes/deliveryAgent.routes.js';
 // import settingsRoutes from './routes/settings.routes.js';
+import greetingRoutes from './routes/greeting.routes.js';
 
 
 
@@ -43,6 +44,7 @@ app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/offers', offerRoutes);
 app.use("/api/delivery-agents", deliveryAgentRoutes);
+app.use('/api/greetings', greetingRoutes);
 // app.use('/api/settings', settingsRoutes);
 
 // Error handler (should always be after routes)
